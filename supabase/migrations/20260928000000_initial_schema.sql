@@ -257,6 +257,28 @@ using (
   or professional_id in (
     select id from public.professional_profiles where user_id = public.current_user_profile_id()
   )
+)
+with check (
+  (
+    (
+      customer_id = public.current_user_profile_id()
+      and car_id in (
+        select id from public.cars where user_id = public.current_user_profile_id()
+      )
+    )
+    or professional_id in (
+      select id from public.professional_profiles where user_id = public.current_user_profile_id()
+    )
+  )
+  and id in (
+    select existing.id
+    from public.appointments as existing
+    where existing.id = appointments.id
+      and existing.customer_id = appointments.customer_id
+      and existing.professional_id = appointments.professional_id
+      and existing.car_id = appointments.car_id
+      and existing.service_id = appointments.service_id
+  )
 );
 
 create policy "Payments for customer only"
@@ -285,19 +307,48 @@ with check (
 );
 
 create policy "Messages for participants"
-on public.messages for all
+on public.messages for select
 using (
   sender_id = public.current_user_profile_id()
   or receiver_id = public.current_user_profile_id()
-)
+);
+
+create policy "Participants create messages"
+on public.messages for insert
 with check (
   sender_id = public.current_user_profile_id()
-  or receiver_id = public.current_user_profile_id()
+  and appointment_id in (
+    select id
+    from public.appointments
+    where customer_id = public.current_user_profile_id()
+       or professional_id in (
+         select id from public.professional_profiles where user_id = public.current_user_profile_id()
+       )
+  )
+);
+
+create policy "Participants update sent messages"
+on public.messages for update
+using (sender_id = public.current_user_profile_id())
+with check (
+  sender_id = public.current_user_profile_id()
+  and appointment_id in (
+    select id
+    from public.appointments
+    where customer_id = public.current_user_profile_id()
+       or professional_id in (
+         select id from public.professional_profiles where user_id = public.current_user_profile_id()
+       )
+  )
 );
 
 create policy "Notifications for owner"
 on public.notifications for select
 using (user_id = public.current_user_profile_id());
+
+create policy "Users insert own notifications"
+on public.notifications for insert
+with check (user_id = public.current_user_profile_id());
 
 create policy "Consent for owner"
 on public.consents for select

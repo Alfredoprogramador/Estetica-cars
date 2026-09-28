@@ -24,6 +24,11 @@ Deno.serve(async (request) => {
     },
   );
 
+  const adminSupabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  );
+
   const {
     data: { user },
     error: authError,
@@ -45,7 +50,7 @@ Deno.serve(async (request) => {
     });
   }
 
-  const anonymization = await supabase
+  const anonymization = await adminSupabase
     .from("users")
     .update({
       name: "Usuário removido",
@@ -64,7 +69,7 @@ Deno.serve(async (request) => {
     });
   }
 
-  const auditInsert = await supabase.from("audit_logs").insert({
+  const auditInsert = await adminSupabase.from("audit_logs").insert({
     user_id: profile.data.id,
     action: "data_delete",
     performed_by: "user",

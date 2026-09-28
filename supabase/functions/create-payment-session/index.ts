@@ -40,6 +40,11 @@ Deno.serve(async (request) => {
     },
   );
 
+  const adminSupabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  );
+
   const {
     data: { user },
     error: authError,
@@ -88,7 +93,7 @@ Deno.serve(async (request) => {
     });
   }
 
-  const existingPayment = await supabase
+  const existingPayment = await adminSupabase
     .from("payments")
     .select("id, amount, currency, status, provider")
     .eq("appointment_id", payload.appointmentId)
@@ -104,7 +109,7 @@ Deno.serve(async (request) => {
   const payment =
     existingPayment.data ??
     (
-      await supabase
+      await adminSupabase
         .from("payments")
         .insert({
           appointment_id: payload.appointmentId,
@@ -125,17 +130,24 @@ Deno.serve(async (request) => {
     });
   }
 
+  if (existingPayment.data && existingPayment.data.provider !== payload.provider) {
+    return new Response(JSON.stringify({ error: "Payment provider already selected for this appointment" }), {
+      status: 409,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   return new Response(
     JSON.stringify({
       paymentId: payment.id,
-      provider: payload.provider,
+      provider: payment.provider,
       appointmentId: payload.appointmentId,
       amount: payment.amount,
       currency: payment.currency,
       appointmentStatus: appointment.data.status,
       status: payment.status,
       nextAction:
-        payload.provider === "pix"
+        payment.provider === "pix"
           ? "display_qr_code"
           : "redirect_to_gateway",
     }),

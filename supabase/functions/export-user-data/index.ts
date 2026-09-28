@@ -24,6 +24,11 @@ Deno.serve(async (request) => {
     },
   );
 
+  const adminSupabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  );
+
   const {
     data: { user },
     error: authError,
@@ -49,15 +54,27 @@ Deno.serve(async (request) => {
     });
   }
 
-  const [profile, cars, appointments, payments, reviews] = await Promise.all([
+  const professionalProfile = await supabase
+    .from("professional_profiles")
+    .select("id, bio, service_radius_km, average_rating, total_reviews, is_verified, created_at")
+    .eq("user_id", profileResult.data.id)
+    .maybeSingle();
+
+  const [profile, cars, appointments, payments, reviews, professionalAppointments, professionalReviews] = await Promise.all([
     Promise.resolve(profileResult),
     supabase.from("cars").select("*").eq("user_id", profileResult.data.id),
     supabase.from("appointments").select("*").eq("customer_id", profileResult.data.id),
     supabase.from("payments").select("*").eq("customer_id", profileResult.data.id),
     supabase.from("reviews").select("*").eq("customer_id", profileResult.data.id),
+    professionalProfile.data
+      ? supabase.from("appointments").select("*").eq("professional_id", professionalProfile.data.id)
+      : Promise.resolve({ data: [], error: null }),
+    professionalProfile.data
+      ? supabase.from("reviews").select("*").eq("professional_id", professionalProfile.data.id)
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
-  await supabase.from("audit_logs").insert({
+  await adminSupabase.from("audit_logs").insert({
     user_id: profile.data.id,
     action: "data_export",
     performed_by: "user",
@@ -71,6 +88,9 @@ Deno.serve(async (request) => {
       appointments: appointments.data ?? [],
       payments: payments.data ?? [],
       reviews: reviews.data ?? [],
+      professionalProfile: professionalProfile.data,
+      professionalAppointments: professionalAppointments.data ?? [],
+      professionalReviews: professionalReviews.data ?? [],
     }),
     {
       status: 200,

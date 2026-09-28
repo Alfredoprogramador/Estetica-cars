@@ -53,7 +53,7 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
           return response;
         })
-        .catch(() => caches.match(OFFLINE_URL));
+        .catch(() => Response.error());
     }),
   );
 });

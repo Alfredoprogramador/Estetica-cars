@@ -41,6 +41,11 @@ Deno.serve(async (request) => {
     },
   );
 
+  const adminSupabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  );
+
   const {
     data: { user },
     error: authError,
@@ -104,7 +109,7 @@ Deno.serve(async (request) => {
     });
   }
 
-  const notificationInsert = await supabase.from("notifications").insert({
+  const notificationInsert = await adminSupabase.from("notifications").insert({
     user_id: payload.userId,
     title: payload.title,
     body: payload.body,
