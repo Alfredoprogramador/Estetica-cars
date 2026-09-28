@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">CarClean Pro</title>
+  <desc id="desc">Ícone do aplicativo CarClean Pro</desc>
+  <rect width="256" height="256" rx="56" fill="#0f172a"/>
+  <path d="M54 150c0-11.046 8.954-20 20-20h108c11.046 0 20 8.954 20 20v18c0 12.15-9.85 22-22 22h-10c-6.627 0-12-5.373-12-12v-2H98v2c0 6.627-5.373 12-12 12H76c-12.15 0-22-9.85-22-22v-18Z" fill="#10b981"/>
+  <path d="m85 114 14-33c4.418-10.387 14.622-17.127 25.91-17.127h6.18c11.288 0 21.492 6.74 25.91 17.127L171 114H85Z" fill="#34d399"/>
+  <circle cx="89" cy="168" r="12" fill="#e2e8f0"/>
+  <circle cx="167" cy="168" r="12" fill="#e2e8f0"/>
+  <path d="M94 110h68" stroke="#ecfeff" stroke-width="10" stroke-linecap="round"/>
+</svg>

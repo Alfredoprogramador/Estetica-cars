@@ -1,0 +1,108 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders } from "../_shared/cors.ts";
+
+Deno.serve(async (request) => {
+  if (request.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  const authorization = request.headers.get("Authorization");
+  if (!authorization) {
+    return new Response(JSON.stringify({ error: "Missing authorization header" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    {
+      global: {
+        headers: { Authorization: authorization },
+      },
+    },
+  );
+
+  const adminSupabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  );
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const profile = await supabase.from("users").select("id").eq("auth_id", user.id).single();
+
+  if (!profile.data) {
+    return new Response(JSON.stringify({ error: "Profile not found" }), {
+      status: 404,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const anonymization = await adminSupabase
+    .from("users")
+    .update({
+      role: "customer",
+      name: "Usuário removido",
+      public_name: "Cliente removido",
+      email: `deleted+${user.id}@example.invalid`,
+      phone: null,
+      cpf_cnpj: null,
+      address: {},
+    })
+    .eq("auth_id", user.id);
+
+  if (anonymization.error) {
+    return new Response(JSON.stringify({ error: "Failed to anonymize profile" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const auditInsert = await adminSupabase.from("audit_logs").insert({
+    user_id: null,
+    action: "data_delete",
+    performed_by: "user",
+    details: {
+      source: "edge-function",
+      strategy: "anonymization",
+      deleted_profile_id: profile.data.id,
+    },
+  });
+
+  if (auditInsert.error) {
+    return new Response(JSON.stringify({ error: "Failed to write audit log" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const authUpdate = await adminSupabase.auth.admin.updateUserById(user.id, {
+    email: `deleted+${user.id}@example.invalid`,
+    user_metadata: { deleted: true },
+    ban_duration: "876000h",
+  });
+
+  if (authUpdate.error) {
+    return new Response(JSON.stringify({ error: "Failed to disable auth user" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  return new Response(JSON.stringify({ success: true }), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+});
