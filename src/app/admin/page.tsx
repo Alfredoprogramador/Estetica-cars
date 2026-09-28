@@ -19,7 +19,7 @@ export default function AdminPage() {
             key={capability}
             eyebrow="Admin"
             title={capability}
-            description="Estrutura preparada para conectores de dados, filtros e automações do painel." 
+            description="Estrutura preparada para conectores de dados, filtros e automações do painel."
           />
         ))}
       </div>

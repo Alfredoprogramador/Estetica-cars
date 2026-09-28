@@ -240,7 +240,15 @@ using (
 
 create policy "Customers create appointments"
 on public.appointments for insert
-with check (customer_id = public.current_user_profile_id());
+with check (
+  customer_id = public.current_user_profile_id()
+  and car_id in (
+    select id from public.cars where user_id = public.current_user_profile_id()
+  )
+  and professional_id in (
+    select id from public.professional_profiles
+  )
+);
 
 create policy "Participants update appointments"
 on public.appointments for update
@@ -266,7 +274,15 @@ using (
 
 create policy "Customers create reviews"
 on public.reviews for insert
-with check (customer_id = public.current_user_profile_id());
+with check (
+  customer_id = public.current_user_profile_id()
+  and appointment_id in (
+    select id
+    from public.appointments
+    where customer_id = public.current_user_profile_id()
+      and professional_id = reviews.professional_id
+  )
+);
 
 create policy "Messages for participants"
 on public.messages for all
