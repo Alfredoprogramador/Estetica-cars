@@ -106,6 +106,13 @@ Deno.serve(async (request) => {
     });
   }
 
+  if (existingPayment.data && existingPayment.data.provider !== payload.provider) {
+    return new Response(JSON.stringify({ error: "Payment provider already selected for this appointment" }), {
+      status: 409,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const payment =
     existingPayment.data ??
     (
@@ -126,13 +133,6 @@ Deno.serve(async (request) => {
   if (!payment) {
     return new Response(JSON.stringify({ error: "Failed to create payment" }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  if (existingPayment.data && existingPayment.data.provider !== payload.provider) {
-    return new Response(JSON.stringify({ error: "Payment provider already selected for this appointment" }), {
-      status: 409,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

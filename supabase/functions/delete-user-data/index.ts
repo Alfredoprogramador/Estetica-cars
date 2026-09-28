@@ -69,6 +69,15 @@ Deno.serve(async (request) => {
     });
   }
 
+  const authDeletion = await adminSupabase.auth.admin.deleteUser(user.id);
+
+  if (authDeletion.error) {
+    return new Response(JSON.stringify({ error: "Failed to delete auth user" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const auditInsert = await adminSupabase.from("audit_logs").insert({
     user_id: profile.data.id,
     action: "data_delete",

@@ -346,10 +346,6 @@ create policy "Notifications for owner"
 on public.notifications for select
 using (user_id = public.current_user_profile_id());
 
-create policy "Users insert own notifications"
-on public.notifications for insert
-with check (user_id = public.current_user_profile_id());
-
 create policy "Consent for owner"
 on public.consents for select
 using (user_id = public.current_user_profile_id());
