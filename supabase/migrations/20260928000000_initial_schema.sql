@@ -246,7 +246,11 @@ with check (
     select id from public.cars where user_id = public.current_user_profile_id()
   )
   and professional_id in (
-    select id from public.professional_profiles
+    select professional_profiles.id
+    from public.professional_profiles
+    join public.users on users.id = professional_profiles.user_id
+    where professional_profiles.is_verified = true
+      and users.role = 'professional'
   )
 );
 
@@ -317,6 +321,17 @@ create policy "Participants create messages"
 on public.messages for insert
 with check (
   sender_id = public.current_user_profile_id()
+  and receiver_id <> public.current_user_profile_id()
+  and receiver_id in (
+    select customer_id
+    from public.appointments
+    where id = messages.appointment_id
+    union
+    select professional_profiles.user_id
+    from public.appointments
+    join public.professional_profiles on professional_profiles.id = appointments.professional_id
+    where appointments.id = messages.appointment_id
+  )
   and appointment_id in (
     select id
     from public.appointments
@@ -332,6 +347,17 @@ on public.messages for update
 using (sender_id = public.current_user_profile_id())
 with check (
   sender_id = public.current_user_profile_id()
+  and receiver_id <> public.current_user_profile_id()
+  and receiver_id in (
+    select customer_id
+    from public.appointments
+    where id = messages.appointment_id
+    union
+    select professional_profiles.user_id
+    from public.appointments
+    join public.professional_profiles on professional_profiles.id = appointments.professional_id
+    where appointments.id = messages.appointment_id
+  )
   and appointment_id in (
     select id
     from public.appointments

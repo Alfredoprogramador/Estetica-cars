@@ -22,7 +22,16 @@ Deno.serve(async (request) => {
     });
   }
 
-  const payload = (await request.json()) as NotificationPayload;
+  let payload: NotificationPayload;
+
+  try {
+    payload = (await request.json()) as NotificationPayload;
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid JSON payload" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   if (!payload.appointmentId || !payload.userId || !payload.title || !payload.body) {
     return new Response(JSON.stringify({ error: "Invalid payload" }), {

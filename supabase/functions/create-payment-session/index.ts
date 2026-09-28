@@ -21,7 +21,16 @@ Deno.serve(async (request) => {
     });
   }
 
-  const payload = (await request.json()) as PaymentPayload;
+  let payload: PaymentPayload;
+
+  try {
+    payload = (await request.json()) as PaymentPayload;
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid JSON payload" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   if (!payload.appointmentId || !payload.provider) {
     return new Response(JSON.stringify({ error: "Invalid payload" }), {

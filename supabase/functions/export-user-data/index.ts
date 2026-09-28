@@ -47,6 +47,13 @@ Deno.serve(async (request) => {
     .eq("auth_id", user.id)
     .single();
 
+  if (profileResult.error) {
+    return new Response(JSON.stringify({ error: "Failed to load profile" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   if (!profileResult.data) {
     return new Response(JSON.stringify({ error: "Profile not found" }), {
       status: 404,

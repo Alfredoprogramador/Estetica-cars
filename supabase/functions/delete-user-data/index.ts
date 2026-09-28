@@ -71,10 +71,14 @@ Deno.serve(async (request) => {
   }
 
   const auditInsert = await adminSupabase.from("audit_logs").insert({
-    user_id: profile.data.id,
+    user_id: null,
     action: "data_delete",
     performed_by: "user",
-    details: { source: "edge-function", strategy: "anonymization" },
+    details: {
+      source: "edge-function",
+      strategy: "anonymization",
+      deleted_profile_id: profile.data.id,
+    },
   });
 
   if (auditInsert.error) {
