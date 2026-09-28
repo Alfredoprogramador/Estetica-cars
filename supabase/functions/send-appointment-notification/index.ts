@@ -60,6 +60,13 @@ Deno.serve(async (request) => {
 
   const profile = await supabase.from("users").select("id").eq("auth_id", user.id).single();
 
+  if (profile.error) {
+    return new Response(JSON.stringify({ error: "Failed to load profile" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   if (!profile.data) {
     return new Response(JSON.stringify({ error: "Profile not found" }), {
       status: 404,
@@ -72,6 +79,13 @@ Deno.serve(async (request) => {
     .select("customer_id, professional_id")
     .eq("id", payload.appointmentId)
     .single();
+
+  if (appointment.error) {
+    return new Response(JSON.stringify({ error: "Failed to load appointment" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   if (!appointment.data) {
     return new Response(JSON.stringify({ error: "Appointment not found" }), {

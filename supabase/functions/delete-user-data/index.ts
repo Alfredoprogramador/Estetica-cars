@@ -53,6 +53,7 @@ Deno.serve(async (request) => {
   const anonymization = await adminSupabase
     .from("users")
     .update({
+      role: "customer",
       name: "Usuário removido",
       public_name: "Cliente removido",
       email: `deleted+${user.id}@example.invalid`,
@@ -69,15 +70,6 @@ Deno.serve(async (request) => {
     });
   }
 
-  const authDeletion = await adminSupabase.auth.admin.deleteUser(user.id);
-
-  if (authDeletion.error) {
-    return new Response(JSON.stringify({ error: "Failed to delete auth user" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
   const auditInsert = await adminSupabase.from("audit_logs").insert({
     user_id: profile.data.id,
     action: "data_delete",
@@ -87,6 +79,19 @@ Deno.serve(async (request) => {
 
   if (auditInsert.error) {
     return new Response(JSON.stringify({ error: "Failed to write audit log" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const authUpdate = await adminSupabase.auth.admin.updateUserById(user.id, {
+    email: `deleted+${user.id}@example.invalid`,
+    user_metadata: { deleted: true },
+    ban_duration: "876000h",
+  });
+
+  if (authUpdate.error) {
+    return new Response(JSON.stringify({ error: "Failed to disable auth user" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

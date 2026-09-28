@@ -74,12 +74,19 @@ Deno.serve(async (request) => {
       : Promise.resolve({ data: [], error: null }),
   ]);
 
-  await adminSupabase.from("audit_logs").insert({
+  const auditInsert = await adminSupabase.from("audit_logs").insert({
     user_id: profile.data.id,
     action: "data_export",
     performed_by: "user",
     details: { source: "edge-function" },
   });
+
+  if (auditInsert.error) {
+    return new Response(JSON.stringify({ error: "Failed to write audit log" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   return new Response(
     JSON.stringify({

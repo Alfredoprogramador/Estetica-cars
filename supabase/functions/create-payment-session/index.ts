@@ -113,10 +113,9 @@ Deno.serve(async (request) => {
     });
   }
 
-  const payment =
-    existingPayment.data ??
-    (
-      await adminSupabase
+  const paymentInsert = existingPayment.data
+    ? null
+    : await adminSupabase
         .from("payments")
         .insert({
           appointment_id: payload.appointmentId,
@@ -127,8 +126,16 @@ Deno.serve(async (request) => {
           provider: payload.provider,
         })
         .select("id, amount, currency, status, provider")
-        .single()
-    ).data;
+        .single();
+
+  if (paymentInsert?.error) {
+    return new Response(JSON.stringify({ error: "Failed to create payment", details: paymentInsert.error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const payment = existingPayment.data ?? paymentInsert?.data;
 
   if (!payment) {
     return new Response(JSON.stringify({ error: "Failed to create payment" }), {
