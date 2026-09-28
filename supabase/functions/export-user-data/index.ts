@@ -36,7 +36,11 @@ Deno.serve(async (request) => {
     });
   }
 
-  const profileResult = await supabase.from("users").select("*").eq("auth_id", user.id).single();
+  const profileResult = await supabase
+    .from("users")
+    .select("id, role, name, public_name, email, phone, address, created_at, updated_at")
+    .eq("auth_id", user.id)
+    .single();
 
   if (!profileResult.data) {
     return new Response(JSON.stringify({ error: "Profile not found" }), {

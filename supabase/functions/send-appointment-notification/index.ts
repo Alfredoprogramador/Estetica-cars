@@ -104,12 +104,19 @@ Deno.serve(async (request) => {
     });
   }
 
-  await supabase.from("notifications").insert({
+  const notificationInsert = await supabase.from("notifications").insert({
     user_id: payload.userId,
     title: payload.title,
     body: payload.body,
     type: payload.type ?? "appointment",
   });
+
+  if (notificationInsert.error) {
+    return new Response(JSON.stringify({ error: "Failed to create notification" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   return new Response(
     JSON.stringify({

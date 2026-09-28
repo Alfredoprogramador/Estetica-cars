@@ -1,6 +1,6 @@
 const CACHE_NAME = "carclean-pro-v1";
 const OFFLINE_URL = "/offline";
-const ASSETS_TO_CACHE = ["/", "/offline", "/manifest.webmanifest", "/icon.svg"];
+const ASSETS_TO_CACHE = ["/", "/offline", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE)));
@@ -23,10 +23,16 @@ self.addEventListener("fetch", (event) => {
 
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request).catch(async () => {
-        const cache = await caches.open(CACHE_NAME);
-        return cache.match(OFFLINE_URL);
-      }),
+      fetch(event.request)
+        .then(async (response) => {
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(event.request, response.clone());
+          return response;
+        })
+        .catch(async () => {
+          const cache = await caches.open(CACHE_NAME);
+          return (await cache.match(event.request)) || cache.match(OFFLINE_URL);
+        }),
     );
     return;
   }

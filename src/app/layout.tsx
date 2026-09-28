@@ -5,12 +5,14 @@ import { ServiceWorkerRegistration } from "@/components/service-worker-registrat
 import { appConfig } from "@/data/site-content";
 import "./globals.css";
 
+const MANIFEST_PATH = "/manifest.webmanifest";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://carclean-pro.vercel.app"),
   title: appConfig.name,
   description: appConfig.description,
   applicationName: appConfig.name,
-  manifest: "/manifest.webmanifest",
+  manifest: MANIFEST_PATH,
   icons: {
     icon: "/icon.svg",
     apple: "/icon.svg",

@@ -88,14 +88,52 @@ Deno.serve(async (request) => {
     });
   }
 
+  const existingPayment = await supabase
+    .from("payments")
+    .select("id, amount, currency, status, provider")
+    .eq("appointment_id", payload.appointmentId)
+    .maybeSingle();
+
+  if (existingPayment.error) {
+    return new Response(JSON.stringify({ error: "Failed to load payment" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const payment =
+    existingPayment.data ??
+    (
+      await supabase
+        .from("payments")
+        .insert({
+          appointment_id: payload.appointmentId,
+          customer_id: profile.data.id,
+          amount: appointment.data.total_price,
+          currency: "BRL",
+          status: "pending",
+          provider: payload.provider,
+        })
+        .select("id, amount, currency, status, provider")
+        .single()
+    ).data;
+
+  if (!payment) {
+    return new Response(JSON.stringify({ error: "Failed to create payment" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   return new Response(
     JSON.stringify({
+      paymentId: payment.id,
       provider: payload.provider,
       appointmentId: payload.appointmentId,
-      amount: appointment.data.total_price,
-      currency: "BRL",
+      amount: payment.amount,
+      currency: payment.currency,
       appointmentStatus: appointment.data.status,
-      status: "pending",
+      status: payment.status,
       nextAction:
         payload.provider === "pix"
           ? "display_qr_code"

@@ -45,7 +45,7 @@ Deno.serve(async (request) => {
     });
   }
 
-  await supabase
+  const anonymization = await supabase
     .from("users")
     .update({
       name: "Usuário removido",
@@ -57,12 +57,26 @@ Deno.serve(async (request) => {
     })
     .eq("auth_id", user.id);
 
-  await supabase.from("audit_logs").insert({
+  if (anonymization.error) {
+    return new Response(JSON.stringify({ error: "Failed to anonymize profile" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const auditInsert = await supabase.from("audit_logs").insert({
     user_id: profile.data.id,
     action: "data_delete",
     performed_by: "user",
     details: { source: "edge-function", strategy: "anonymization" },
   });
+
+  if (auditInsert.error) {
+    return new Response(JSON.stringify({ error: "Failed to write audit log" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   return new Response(JSON.stringify({ success: true }), {
     status: 200,
